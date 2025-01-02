@@ -173,7 +173,6 @@ class AdminCLI:
             else:
                 print("Invalid choice. Please try again.")
 
-    # In admin.py, update the list_all_users method:
     def list_all_users(self):
         print("\n=== All Users ===")
         if not self.auth_manager._users:

@@ -11,6 +11,7 @@ from data_storage import DataStorage  # Add this imports
 from user_enums import UserRole  # Add this import
 from enum import Enum
 
+
 @dataclass
 class UserCredentials:
     email: str
@@ -54,11 +55,12 @@ class AuthenticationManager:
     def __init__(self):
         self._users: Dict[str, UserCredentials] = {}
         self._secret_key = "your-secret-key"
-        self._token_expiry = 24 * 60 * 60
+        self._token_expiry = 24 * 60 * 60  # 24 hours
         self._storage = DataStorage()
-        self._valid_roles = [role.value for role in UserRole]
+        self._valid_roles = [role.value for role in UserRole]  # Store role numbers
         self._load_users()
-
+        
+    
     def get_user_role_display(self, email: str) -> str:
         """Get user role display name"""
         if email in self._users:
@@ -66,23 +68,7 @@ class AuthenticationManager:
             return UserRole.get_role_name(role_number)
         return "customer"
 
-    def display_menu(self):
-        print("\n=== Insurance Management System ===")
-        print(f"Logged in as: {self.current_user}")
-        role_number = self.auth_cli.auth_manager._users[self.current_user].role
-        role_name = UserRole.get_role_name(role_number)
-        print(f"Role: {role_name}\n")
-
-class AuthenticationManager:
-    def __init__(self):
-        self._users: Dict[str, UserCredentials] = {}
-        self._secret_key = "your-secret-key"
-        self._token_expiry = 24 * 60 * 60  # 24 hours
-        self._storage = DataStorage()
-        self._valid_roles = [role.value for role in UserRole]  # Store role numbers
-        self._load_users()
-
-    def register(self, email: str, password: str, role: int = UserRole.CUSTOMER.value) -> Tuple[bool, str]:
+    def register(self, email: str, password: str, role: UserRole) -> Tuple[bool, str]:
         try:
             if not self._validate_email(email):
                 return False, "Invalid email format"
@@ -90,24 +76,19 @@ class AuthenticationManager:
             if email in self._users:
                 return False, "Email already registered"
 
-            # Validate role number
-            if role not in self._valid_roles:
-                role = UserRole.CUSTOMER.value  # Default to customer if invalid
-
             name = email.split('@')[0]
-
             self._users[email] = UserCredentials(
                 email=email,
                 password=password,
-                role=role,  # Store role as number
+                role=role.value,  # Store the role value instead of enum
                 name=name
             )
 
             self._save_users()
-            return True, f"Registration successful. User created with role: {UserRole.get_role_name(role)}"
+            return True, "Registration successful"
         except Exception as e:
             return False, f"Registration error: {str(e)}"
-        
+   
     def _load_users(self):
         """Load users from storage"""
         try:
@@ -124,20 +105,22 @@ class AuthenticationManager:
 
 
     def _save_users(self):
-        """Save users to storage"""
         try:
-            users_data = {
-                email: asdict(user_creds) 
-                for email, user_creds in self._users.items()
-            }
+            users_data = {}
+            for email, user_creds in self._users.items():
+                users_data[email] = {
+                    'email': user_creds.email,
+                    'password': user_creds.password,
+                    'role': user_creds.role,  # This will now be the integer value
+                    'name': user_creds.name
+                }
+
             saved = self._storage.save_data("users", users_data)
             if not saved:
                 raise ValueError("Failed to save data to storage")
         except Exception as e:
             print(f"Error in _save_users: {str(e)}")
-
-    
-            
+                
             
     def _validate_email(self, email: str) -> bool:
         """Validate email format"""
@@ -266,40 +249,28 @@ class AuthCLI:
         print("2. View Profile")
         print("3. Logout")
         print("==========================")
-
-    def register(self):
-        """Handle user registration"""
-        self.clear_screen()
-        print("\n=== User Registration ===")
         
+    def register(self):
+        print("\n=== User Registration ===")
         email = input("Enter email: ").strip()
         password = input("Enter password: ").strip()
         
-        # Display role options
         print("\nSelect role:")
-        print("1. Customer")
-        print("2. Admin")
-        print("3. Claim Adjuster")
-        print("4. Agent")
-        print("5. Underwriter")
+        UserRole.display_options()
         
-        role_choice = input("Enter role number (1-5): ").strip()
-        role_map = {
-            '1': 'customer',
-            '2': 'admin',
-            '3': 'claim adjuster',
-            '4': 'agent',
-            '5': 'underwriter'
-        }
-        role = role_map.get(role_choice, 'customer')  # Default to customer if invalid input
-
-        success, message = self.auth_manager.register(email, password, role)
-        if success and self.user_manager:
-            # Create user profile in UserManager
-            self.user_manager.create_user(email, password)
-        print(f"\n{message}")
+        try:
+            role_choice = int(input("Enter role number (1-5): ").strip())
+            role = UserRole(role_choice)  # Convert directly to enum
+            
+            success, message = self.auth_manager.register(email, password, role)
+            if success and self.user_manager:
+                self.user_manager.create_user(email, password)
+            print(f"\n{message}")
+        except ValueError:
+            print("Invalid role selection")
+        
         input("\nPress Enter to continue...")
-
+        
     def login(self):
         """Handle user login"""
         self.clear_screen()

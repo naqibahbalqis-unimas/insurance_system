@@ -1,0 +1,14 @@
+{
+    "claim14@gmail.com": {
+        "email": "claim14@gmail.com",
+        "password": "claim",
+        "role": 3,
+        "name": "claim14"
+    },
+    "claim01@gmail.com": {
+        "email": "claim01@gmail.com",
+        "password": "claim",
+        "role": 3,
+        "name": "claim01"
+    }
+}
