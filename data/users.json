@@ -88,5 +88,11 @@
         "password": "arifcustomer",
         "role": "customer",
         "name": "arifcustomer"
+    },
+    "janinecass@gmail.com": {
+        "email": "janinecass@gmail.com",
+        "password": "janine",
+        "role": "customer",
+        "name": "janinecass"
     }
 }
