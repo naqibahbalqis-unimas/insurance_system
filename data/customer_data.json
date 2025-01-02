@@ -1,0 +1,42 @@
+{
+    "customer_info": {
+        "email": "johndoe@example.com",
+        "name": "John Doe",
+        "contact_number": "1234567890",
+        "address": "123 Main Street",
+        "birth_date": "1990-01-01",
+        "credit_score": 750.0
+    },
+    "policies": {
+        "POL123": {
+            "policy_id": "POL123",
+            "customer_id": "johndoe@example.com",
+            "policy_type": "LIFE",
+            "coverage_amount": 100000.0,
+            "premium": 650.0,
+            "status": 2,
+            "start_date": null,
+            "end_date": null,
+            "conditions": [],
+            "beneficiary": "",
+            "death_benefit": 0.0
+        },
+        "POL124": {
+            "policy_id": "POL124",
+            "customer_id": "johndoe@example.com",
+            "policy_type": "CAR",
+            "coverage_amount": 50000.0,
+            "premium": 4000.0,
+            "status": 1,
+            "start_date": null,
+            "end_date": null,
+            "conditions": [],
+            "vehicle_id": "",
+            "is_comprehensive": false,
+            "vehicle_age": 0,
+            "vehicle_model": "",
+            "vehicle_plate_number": "",
+            "vehicle_condition": ""
+        }
+    }
+}

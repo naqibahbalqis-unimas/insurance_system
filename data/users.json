@@ -1,0 +1,92 @@
+{
+    "admin@gmail.com": {
+        "email": "admin@gmail.com",
+        "password": "admin",
+        "role": "admin",
+        "name": ""
+    },
+    "customer@gmail.com": {
+        "email": "customer@gmail.com",
+        "password": "customer",
+        "role": "customer",
+        "name": ""
+    },
+    "underwriter@gmail.com": {
+        "email": "underwriter@gmail.com",
+        "password": "underwriter",
+        "role": "underwriter",
+        "name": ""
+    },
+    "agent@gmail.com": {
+        "email": "agent@gmail.com",
+        "password": "agent",
+        "role": "agent",
+        "name": ""
+    },
+    "claim.adjuster@gmail.com": {
+        "email": "claim.adjuster@gmail.com",
+        "password": "adjuster",
+        "role": "claim adjuster",
+        "name": ""
+    },
+    "john_doe@gmail.com": {
+        "email": "john_doe@gmail.com",
+        "password": "johndoe",
+        "role": "customer",
+        "name": ""
+    },
+    "jennydoe@gmail.com": {
+        "email": "jennydoe@gmail.com",
+        "password": "jenny",
+        "role": "customer",
+        "name": ""
+    },
+    "customer1@gmail.com": {
+        "email": "customer1@gmail.com",
+        "password": "customer1",
+        "role": "customer",
+        "name": "customer1"
+    },
+    "arifadmin@gmail.com": {
+        "email": "arifadmin@gmail.com",
+        "password": "arifadmin",
+        "role": "admin",
+        "name": "arifadmin"
+    },
+    "test@gmail.com": {
+        "email": "test@gmail.com",
+        "password": "test",
+        "role": "admin",
+        "name": "test"
+    },
+    "testing@gmail.com": {
+        "email": "testing@gmail.com",
+        "password": "testing",
+        "role": "admin",
+        "name": "testing"
+    },
+    "roger@gmail.com": {
+        "email": "roger@gmail.com",
+        "password": "roger",
+        "role": "admin",
+        "name": "roger"
+    },
+    "alu@gmail.com": {
+        "email": "alu@gmail.com",
+        "password": "alu",
+        "role": "admin",
+        "name": "alu"
+    },
+    "arip@gmail.com": {
+        "email": "arip@gmail.com",
+        "password": "arip",
+        "role": "admin",
+        "name": "arip"
+    },
+    "arifcustomer@gmail.com": {
+        "email": "arifcustomer@gmail.com",
+        "password": "arifcustomer",
+        "role": "customer",
+        "name": "arifcustomer"
+    }
+}
