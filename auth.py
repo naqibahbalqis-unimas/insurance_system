@@ -8,6 +8,8 @@ import os
 import time
 from dataclasses import dataclass, asdict
 from data_storage import DataStorage  # Add this imports
+from user_enums import UserRole  # Add this import
+from enum import Enum
 
 @dataclass
 class UserCredentials:
@@ -15,17 +17,97 @@ class UserCredentials:
     password: str
     role: str
     name: str = ""  # Add name field with default empty string
+    
+
+
+class UserRole(Enum):
+    CUSTOMER = 1
+    ADMIN = 2
+    CLAIM_ADJUSTER = 3
+    AGENT = 4
+    UNDERWRITER = 5
+
+    @classmethod
+    def get_role_name(cls, number: int) -> str:
+        """Get role name from number"""
+        try:
+            return cls(number).name.lower().replace('_', ' ')
+        except ValueError:
+            return 'customer'  # Default role
+
+    @classmethod
+    def display_options(cls):
+        """Display all role options with numbers"""
+        print("\nAvailable roles:")
+        for role in cls:
+            print(f"{role.value}. {role.name.lower().replace('_', ' ')}")
+
+    @classmethod
+    def get_role(cls, number: int) -> 'UserRole':
+        """Get role enum from number"""
+        try:
+            return cls(number)
+        except ValueError:
+            return cls.CUSTOMER
 
 class AuthenticationManager:
- 
     def __init__(self):
         self._users: Dict[str, UserCredentials] = {}
-        self._secret_key = "your-secret-key"  # In production, use environment variable
-        self._token_expiry = 24 * 60 * 60  # 24 hours in seconds
+        self._secret_key = "your-secret-key"
+        self._token_expiry = 24 * 60 * 60
         self._storage = DataStorage()
-        self._valid_roles = ['customer', 'admin', 'claim adjuster', 'agent', 'underwriter']
+        self._valid_roles = [role.value for role in UserRole]
         self._load_users()
 
+    def get_user_role_display(self, email: str) -> str:
+        """Get user role display name"""
+        if email in self._users:
+            role_number = self._users[email].role
+            return UserRole.get_role_name(role_number)
+        return "customer"
+
+    def display_menu(self):
+        print("\n=== Insurance Management System ===")
+        print(f"Logged in as: {self.current_user}")
+        role_number = self.auth_cli.auth_manager._users[self.current_user].role
+        role_name = UserRole.get_role_name(role_number)
+        print(f"Role: {role_name}\n")
+
+class AuthenticationManager:
+    def __init__(self):
+        self._users: Dict[str, UserCredentials] = {}
+        self._secret_key = "your-secret-key"
+        self._token_expiry = 24 * 60 * 60  # 24 hours
+        self._storage = DataStorage()
+        self._valid_roles = [role.value for role in UserRole]  # Store role numbers
+        self._load_users()
+
+    def register(self, email: str, password: str, role: int = UserRole.CUSTOMER.value) -> Tuple[bool, str]:
+        try:
+            if not self._validate_email(email):
+                return False, "Invalid email format"
+
+            if email in self._users:
+                return False, "Email already registered"
+
+            # Validate role number
+            if role not in self._valid_roles:
+                role = UserRole.CUSTOMER.value  # Default to customer if invalid
+
+            name = email.split('@')[0]
+
+            self._users[email] = UserCredentials(
+                email=email,
+                password=password,
+                role=role,  # Store role as number
+                name=name
+            )
+
+            self._save_users()
+            return True, f"Registration successful. User created with role: {UserRole.get_role_name(role)}"
+        except Exception as e:
+            return False, f"Registration error: {str(e)}"
+        
     def _load_users(self):
         """Load users from storage"""
         try:
@@ -54,39 +136,9 @@ class AuthenticationManager:
         except Exception as e:
             print(f"Error in _save_users: {str(e)}")
 
-
-    def register(self, email: str, password: str, role: str = 'customer') -> Tuple[bool, str]:
-        """Register a new user"""
-        try:
-            # Validate email
-            if not self._validate_email(email):
-                return False, "Invalid email format"
-
-            # Check if email already exists
-            if email in self._users:
-                return False, "Email already registered"
-
-            # Validate role
-            if role.lower() not in self._valid_roles:
-                role = 'customer'  # Default to customer if invalid role
-
-            # Extract name from email for default name
-            name = email.split('@')[0]  # Use part before @ as default name
-
-            # Create new user with plain password
-            self._users[email] = UserCredentials(
-                email=email,
-                password=password,  # Store plain-text password
-                role=role.lower(),
-                name=name  # Add default name
-            )
-
-            # Save updated users to storage
-            self._save_users()
-            return True, "Registration successful"
-        except Exception as e:
-            return False, f"Registration error: {str(e)}"
-
+    
+            
+            
     def _validate_email(self, email: str) -> bool:
         """Validate email format"""
         return '@' in email and '.' in email.split('@')[1]

@@ -92,7 +92,13 @@
     "janinecass@gmail.com": {
         "email": "janinecass@gmail.com",
         "password": "janine",
-        "role": "customer",
+        "role": 3,
         "name": "janinecass"
+    },
+    "agent1@gmail.com": {
+        "email": "agent1@gmail.com",
+        "password": "agent",
+        "role": "customer",
+        "name": "agent1"
     }
 }

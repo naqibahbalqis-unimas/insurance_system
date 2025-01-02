@@ -1,5 +1,5 @@
 from tabulate import tabulate
-from auth import AuthenticationManager, AuthCLI
+from auth import AuthenticationManager, AuthCLI, UserRole
 from admin import Admin, AdminCLI
 from users import UserManager, UserCLI
 from claim_adjuster import ClaimAdjusterCLI
@@ -27,49 +27,62 @@ class MainSystem:
         print("\n=== Insurance Management System ===")
         print(f"Logged in as: {self.current_user}\n")
         user_role = self.auth_cli.auth_manager._users[self.current_user].role
+        
+        # Convert role number to UserRole enum if it's a number
+        if isinstance(user_role, int):
+            user_role = UserRole(user_role)
+        elif isinstance(user_role, str):
+            # Map string role to enum
+            role_map = {
+                'admin': UserRole.ADMIN,
+                'customer': UserRole.CUSTOMER,
+                'claim adjuster': UserRole.CLAIM_ADJUSTER,
+                'agent': UserRole.AGENT,
+                'underwriter': UserRole.UNDERWRITER
+            }
+            user_role = role_map.get(user_role.lower(), UserRole.CUSTOMER)
+        
         menu_options = []
 
-        if user_role == "admin":
+        # Compare using the enum
+        if user_role == UserRole.ADMIN:
             menu_options = [
-                ["1", "User Management"],
-                ["2", "Admin Management"],
-                ["3", "Logout"],
-                ["4", "Exit"]
+                ["1", "Verify Claim"],
+                ["2", "Manage Policy"],
+                ["3", "Generate Report"],
+                ["4", "Audit User Actions"],
+                ["5", "User Authentication Management"],
+                ["6", "Logout"],
+                ["7", "Exit"]
             ]
-        elif user_role == "claim adjuster":
+        elif user_role == UserRole.CLAIM_ADJUSTER:
             menu_options = [
                 ["1", "Claim Adjuster Management"],
                 ["2", "Logout"],
                 ["3", "Exit"]
             ]
-        elif user_role == "underwriter":
+        elif user_role == UserRole.UNDERWRITER:
             menu_options = [
                 ["1", "Underwriter Management"],
                 ["2", "Logout"],
                 ["3", "Exit"]
             ]
-        elif user_role == "agent":
+        elif user_role == UserRole.AGENT:
             menu_options = [
                 ["1", "Agent Management"],
                 ["2", "Logout"],
                 ["3", "Exit"]
             ]
-        elif user_role == "customer":
+        else:  # CUSTOMER or unknown role
             menu_options = [
                 ["1", "User Profile"],
                 ["2", "Customer Portal"],
                 ["3", "Logout"],
                 ["4", "Exit"]
             ]
-        else:
-            menu_options = [
-                ["1", "User Management"],
-                ["2", "Logout"],
-                ["3", "Exit"]
-            ]
 
         print(tabulate(menu_options, headers=["Option", "Description"], tablefmt="grid"))
-
+        
     def handle_auth(self):
         while not self.auth_cli.current_user:
             print("\n=== Welcome to Insurance Management System ===")
@@ -108,7 +121,22 @@ class MainSystem:
             choice = input("\nEnter your choice: ").strip()
             user_role = self.auth_cli.auth_manager._users[self.current_user].role
 
-            if user_role == "customer":
+            # Convert role number to UserRole enum if it's a number
+            if isinstance(user_role, int):
+                user_role = UserRole(user_role)
+            elif isinstance(user_role, str):
+                # Map string role to enum
+                role_map = {
+                    'admin': UserRole.ADMIN,
+                    'customer': UserRole.CUSTOMER,
+                    'claim adjuster': UserRole.CLAIM_ADJUSTER,
+                    'agent': UserRole.AGENT,
+                    'underwriter': UserRole.UNDERWRITER
+                }
+                user_role = role_map.get(user_role.lower(), UserRole.CUSTOMER)
+                
+
+            if user_role == UserRole.CUSTOMER:
                 if choice == "1":
                     self.user_cli.run()
                 elif choice == "2":
@@ -141,19 +169,27 @@ class MainSystem:
                     break
                 else:
                     print("Invalid choice. Please try again.")
-            elif user_role == "admin":
+            if user_role == UserRole.ADMIN:
                 if choice == "1":
-                    self.user_cli.run()
+                    self.admin_cli.admin_menu()
                 elif choice == "2":
-                    self.admin_cli.run()
+                    policy_id = input("Enter policy ID: ").strip()
+                    self.admin_cli.manage_policy(policy_id)
                 elif choice == "3":
-                    self.logout()
+                    self.admin_cli.generate_report()
                 elif choice == "4":
+                    user_id = input("Enter user ID: ").strip()
+                    self.admin_cli.audit_user_actions(user_id)
+                elif choice == "5":
+                    self.admin_cli.manage_authentication()
+                elif choice == "6":
+                    self.logout()
+                elif choice == "7":
                     print("Thank you for using the Policy Management System!")
                     break
                 else:
                     print("Invalid choice. Please try again.")
-            elif user_role == "claim adjuster":
+            elif user_role == UserRole.CLAIM_ADJUSTER:
                 if choice == "1":
                     self.claim_adjuster_cli.run()
                 elif choice == "2":
@@ -163,7 +199,7 @@ class MainSystem:
                     break
                 else:
                     print("Invalid choice. Please try again.")
-            elif user_role == "underwriter":
+            elif user_role == UserRole.UNDERWRITER:
                 if choice == "1":
                     self.underwriter_cli.run()
                 elif choice == "2":
@@ -173,7 +209,7 @@ class MainSystem:
                     break
                 else:
                     print("Invalid choice. Please try again.")
-            elif user_role == "agent":
+            elif user_role == UserRole.AGENT:
                 if choice == "1":
                     self.agent_cli.run()
                 elif choice == "2":

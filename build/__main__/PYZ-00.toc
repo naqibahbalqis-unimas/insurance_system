@@ -349,5 +349,8 @@
   ('urllib.parse', 'e:\\Python\\Lib\\urllib\\parse.py', 'PYMODULE'),
   ('urllib.request', 'e:\\Python\\Lib\\urllib\\request.py', 'PYMODULE'),
   ('urllib.response', 'e:\\Python\\Lib\\urllib\\response.py', 'PYMODULE'),
+  ('user_enums',
+   'E:\\project\\Python\\insurance_system_oose\\user_enums.py',
+   'PYMODULE'),
   ('users', 'E:\\project\\Python\\insurance_system_oose\\users.py', 'PYMODULE'),
   ('zipfile', 'e:\\Python\\Lib\\zipfile.py', 'PYMODULE')])
