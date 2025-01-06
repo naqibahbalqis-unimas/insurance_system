@@ -47,11 +47,35 @@ class Admin(User):
         self.access_level = access_level
 
     def verify_claim(self, claim_id: str) -> bool:
-        """
-        Verify a claim based on the claim ID.
-        """
-        # Implement the logic to verify the claim
-        return True
+            """Verify/approve a claim"""
+            try:
+                from claim import Claim, ClaimStatus, ClaimJSONHandler  # Add these imports
+                
+                # Load claims
+                claims = ClaimJSONHandler.load_claims_from_json("claims.json")
+                if not claims:
+                    print("No claims found.")
+                    return False
+
+                claim = claims.get(claim_id)
+                if not claim:
+                    print("Claim not found.")
+                    return False
+
+                # Update claim status
+                new_status = input("Enter new status (APPROVED/REJECTED/REVIEWING): ").strip().upper()
+                if new_status in [status.value for status in ClaimStatus]:
+                    claim.status = new_status
+                    # Save updated claims
+                    ClaimJSONHandler.save_claims_to_json(claims, "claims.json")
+                    return True
+                else:
+                    print("Invalid status.")
+                    return False
+
+            except Exception as e:
+                print(f"Error verifying claim: {str(e)}")
+                return False
 
 
 
@@ -112,10 +136,10 @@ class AdminCLI:
                 self.manage_authentication()
             elif choice == "2":
                 claim_id = input("Enter claim ID: ").strip()
-                if self.admin.verify_claim(claim_id):
-                    print("Claim verified successfully!")
+                if self.current_user.verify_claim(claim_id):
+                    print("Claim status updated successfully!")
                 else:
-                    print("You do not have the privilege to verify claims.")
+                    print("Failed to update claim status")
             elif choice == "3":
                 policy_id = input("Enter policy ID: ").strip()
                 if self.admin.manage_policy(policy_id):

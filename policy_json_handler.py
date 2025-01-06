@@ -142,7 +142,7 @@ class PolicyJSONHandler:
                 policy_dict = policy.to_dict()
                 # Ensure status is converted to string if it's an enum
                 if 'status' in policy_dict:
-                    policy_dict['status'] = str(policy_dict['status'])
+                    policy_dict['status'] = f"PolicyStatus.{policy.get_status().name}"
                 customer_data["policies"][policy_id] = policy_dict
 
             # Update the customer data in the existing data

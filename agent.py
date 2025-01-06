@@ -28,6 +28,7 @@ class Sale:
         self.commission_earned = 0.0
         self.sale_date = datetime.now()
         self.status = SaleStatus.PENDING.value
+        
 
     def to_dict(self) -> Dict:
         return {
@@ -56,7 +57,8 @@ class Sale:
 class Agent(User):
     """Implementation of insurance sales agent"""
     def __init__(self, user_id: str, name: str, email: str, password: str):
-        super().__init__(user_id, name, email, password, access_level="Agent")
+        super().__init__(email=email, name=name, password=password, access_level=4)  # Pass access_level=4 for agent
+        self.user_id = user_id  # Store user_id separately
         self.commission_rate: float = 0.0
         self.sales_target: float = 0.0
         self.territory: str = ""
@@ -188,6 +190,7 @@ class AgentCLI:
         self.sales_data_file = "data/sales.json"
         self.user_manager = UserManager(auth_manager)  # Add UserManager instance
         self.customers: Dict[str, Dict] = {}  # Track created customers
+        self.load_customer_data()  # Make sure this is called during initialization
 
     def load_data(self):
         """Load sales and policies data"""
@@ -1038,6 +1041,66 @@ class AgentCLI:
                 print("Error creating customer profile")
         else:
             print(f"Failed to create customer: {message}")
+
+    def load_customer_data(self):
+        """Load customer data from the JSON file"""
+        try:
+            # Look in the data folder
+            file_path = os.path.join('data', 'customers.json')
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    self.customers = json.load(f)
+                    print(f"Successfully loaded {len(self.customers)} customers from {file_path}")
+            else:
+                print(f"Customer data file not found at {file_path}")
+                self.customers = {}
+        except Exception as e:
+            print(f"Error loading customer data: {str(e)}")
+            self.customers = {}
+
+    def search_customer(self):
+        """Search for customers in customers.json"""
+        print("\n=== Search Customer ===")
+        print("1. Search by Email")
+        print("2. Search by Name")
+        print("3. Back")
+        
+        choice = input("\nEnter choice (1-3): ").strip()
+        
+        if choice == "1":
+            email = input("Enter customer email: ").strip()
+            if email in self.customers:
+                customer_info = self.customers[email]
+                self._display_customer_info(email, customer_info)
+            else:
+                print("\nNo customer found with that email.")
+                print("Available customers:", list(self.customers.keys()))  # Debug info
+                
+        elif choice == "2":
+            name = input("Enter customer name: ").strip().lower()
+            found_customers = []
+            for email, info in self.customers.items():
+                if name in info.get('name', '').lower():
+                    found_customers.append((email, info))
+            
+            if found_customers:
+                print(f"\nFound {len(found_customers)} matching customers:")
+                for email, customer_info in found_customers:
+                    self._display_customer_info(email, customer_info)
+            else:
+                print("No customers found with that name.")
+                print("Available customers:", list(self.customers.keys()))  # Debug info
+
+    def _display_customer_info(self, email: str, customer_info: dict):
+        """Display customer information"""
+        print(f"\n=== Customer Information ===")
+        print(f"Customer ID: {email}")
+        print(f"Name: {customer_info.get('name', 'N/A')}")
+        print(f"Contact: {customer_info.get('contact', 'N/A')}")
+        print(f"Address: {customer_info.get('address', 'N/A')}")
+        print(f"Credit Score: {customer_info.get('credit_score', 'N/A')}")
+        if 'creation_date' in customer_info:
+            print(f"Customer Since: {customer_info.get('creation_date').split('T')[0]}")
 
     def view_customer_details(self):
         """View customer details"""

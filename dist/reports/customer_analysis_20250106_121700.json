@@ -1,0 +1,35 @@
+{
+    "report_type": "customer_analysis",
+    "agent_id": "agent@gmail.com",
+    "generated_at": "2025-01-06T12:17:00.470148",
+    "data": {
+        "total_customers": 3,
+        "average_purchase": 64438855.666666664,
+        "top_customers": [
+            {
+                "id": "kanye@gmail.com",
+                "data": {
+                    "purchases": 1,
+                    "value": 192381023.0,
+                    "policy_count": 1
+                }
+            },
+            {
+                "id": "sabrina@gmail.com",
+                "data": {
+                    "purchases": 1,
+                    "value": 812313.0,
+                    "policy_count": 1
+                }
+            },
+            {
+                "id": "tupac@gmail.com",
+                "data": {
+                    "purchases": 1,
+                    "value": 123231.0,
+                    "policy_count": 1
+                }
+            }
+        ]
+    }
+}

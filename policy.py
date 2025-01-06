@@ -68,7 +68,7 @@ class Policy:
             return False
 
         valid_transitions = {
-            PolicyStatus.PENDING: [PolicyStatus.APPROVED, PolicyStatus.REJECTED, PolicyStatus.CANCELLED],
+            PolicyStatus.PENDING: [PolicyStatus.APPROVED, PolicyStatus.REJECTED, PolicyStatus.CANCELLED, PolicyStatus.ACTIVE],
             PolicyStatus.APPROVED: [PolicyStatus.ACTIVE, PolicyStatus.CANCELLED],
             PolicyStatus.REJECTED: [PolicyStatus.CANCELLED],
             PolicyStatus.ACTIVE: [PolicyStatus.INACTIVE, PolicyStatus.EXPIRED, PolicyStatus.CANCELLED],

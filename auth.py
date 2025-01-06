@@ -74,13 +74,17 @@ class AuthenticationManager:
                 return False, "Invalid email format"
 
             if email in self._users:
-                return False, "Email already registered"
+                existing_user = self._users[email]
+                # If user exists, preserve their role
+                return True, "User already registered"
 
             name = email.split('@')[0]
+            # Ensure we're using the role value, not the enum
+            role_value = role.value if isinstance(role, UserRole) else role
             self._users[email] = UserCredentials(
                 email=email,
                 password=password,
-                role=role.value,  # Store the role value instead of enum
+                role=role_value,  # Store the role value
                 name=name
             )
 

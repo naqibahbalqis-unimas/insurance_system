@@ -1,12 +1,13 @@
 from datetime import datetime, date
 from typing import List, Dict, Optional
 from users import User
-from policy import Policy, LifePolicy, CarPolicy, HealthPolicy, PropertyPolicy, PolicyManager
+from policy import Policy, LifePolicy, CarPolicy, HealthPolicy, PropertyPolicy, PolicyManager, PolicyType, PolicyStatus, PolicyCalculator
 from claim import Claim
 from policy_enums import PolicyStatus, PolicyType
 from serialization_handler import SerializationHandler
 from policy_calculator import PolicyCalculator
 from data_storage_service import DataStorageService
+from claims_storage_service import ClaimsStorageService
 
 
 class Customer(User):
@@ -55,7 +56,6 @@ class Customer(User):
                         policy.set_death_benefit(float(policy_data.get("death_benefit", 0)))
                     elif policy_type == "CAR":
                         policy = CarPolicy(policy_id, customer_info["email"])
-                        # Handle potential missing vehicle_plate_number in old data
                         vehicle_details = {
                             "vehicle_id": policy_data.get("vehicle_id", "N/A"),
                             "is_comprehensive": policy_data.get("is_comprehensive", False),
@@ -82,9 +82,21 @@ class Customer(User):
 
                     policy.set_coverage_amount(float(policy_data["coverage_amount"]))
                     policy.set_premium(float(policy_data["premium"]))
+                   # Handle status conversion properly
                     if "status" in policy_data:
-                        policy.update_status(PolicyStatus[policy_data["status"]])
-                    if "start_date" in policy_data:
+                        try:
+                            status_value = policy_data["status"]
+                            if isinstance(status_value, str) and status_value.isdigit():
+                                # Convert string number to int and get its enum status
+                                status_enum = PolicyStatus(int(status_value))
+                                policy.update_status(status_enum)
+                            elif isinstance(status_value, int):
+                                # Directly convert int to enum status
+                                status_enum = PolicyStatus(status_value)
+                                policy.update_status(status_enum)
+                        except (ValueError, AttributeError) as e:
+                            print(f"Warning: Could not convert status {status_value}: {str(e)}")
+                    if "start_date" in policy_data and "end_date" in policy_data:
                         policy.set_dates(
                             datetime.strptime(policy_data["start_date"].split('T')[0], "%Y-%m-%d"),
                             datetime.strptime(policy_data["end_date"].split('T')[0], "%Y-%m-%d")
@@ -95,6 +107,7 @@ class Customer(User):
             return customer
         except Exception as e:
             print(f"Error creating customer from dict: {str(e)}")
+            print("Data causing error:", data)  # Add this for debugging
             return None
     def add_policy(self, policy: Policy) -> bool:
         """Add a new policy for the customer"""
@@ -251,14 +264,16 @@ class Customer(User):
             return None
 
 class CustomerCLI:
-    def __init__(self, customer: Customer):
+    def __init__(self, customer: Customer, current_user: str):
         self.customer = customer
         self.policy_manager = PolicyManager()
         self._policy_counter = 1
         self._claim_counter = 1
         self._policy_counter = DataStorageService.get_highest_policy_number() + 1
         self._claim_counter = 1
+        self.current_user = current_user
         self._update_counters()  # Initialize counters based on existing policies/claims
+        
 
 
     def _update_counters(self):
@@ -438,43 +453,49 @@ class CustomerCLI:
             print(f"Error creating policy: {str(e)}")
 
     def file_claim(self):
-        self.view_policies()
-        if not self.customer.policies:
-            print("No policies available for claims.")
-            return
-
-        policy_id = input("\nEnter Policy ID for claim: ").strip()
-        
-        try:
-            amount = float(input("Enter claim amount: $"))
-            if amount <= 0:
-                print("Claim amount must be positive.")
+            """File a new claim for a policy"""
+            self.view_policies()
+            if not self.customer.policies:
+                print("No policies available for claims.")
                 return
 
-            description = input("Enter claim description: ")
+            policy_id = input("\nEnter Policy ID for claim: ").strip()
             
-            # Generate unique claim ID
-            claim_id = self._generate_claim_id()
-            
-            claim = Claim(
-                claim_id=claim_id,
-                policy_id=policy_id,
-                customer_id=self.customer.email
-            )
-            claim.set_amount(amount)
-            claim.set_description(description)
-            
-            if self.customer.add_claim(claim):
-                print(f"Claim {claim_id} filed successfully!")
-            else:
-                print("Failed to file claim. Please ensure policy is active.")
+            try:
+                amount = float(input("Enter claim amount: $"))
+                if amount <= 0:
+                    print("Claim amount must be positive.")
+                    return
 
-        except ValueError as e:
-            print(f"Invalid input: {str(e)}")
-        except Exception as e:
-            print(f"Error filing claim: {str(e)}")
+                description = input("Enter claim description: ")
+                
+                # Generate unique claim ID
+                claim_id = self._generate_claim_id()
+                
+                claim = Claim(
+                    claim_id=claim_id,
+                    policy_id=policy_id,
+                    customer_id=self.customer.email
+                )
+                claim.set_amount(amount)
+                claim.set_description(description)
+                claim.set_status("PENDING")  # Set initial status as PENDING
+                
+                if self.customer.add_claim(claim):
+                    # Save to both customer data and claims data
+                    if ClaimsStorageService.save_claim(claim):
+                        print(f"Claim {claim_id} filed successfully!")
+                        # Also save to customer data for customer's reference
+                        self.save_data()
+                    else:
+                        print("Failed to save claim. Please try again.")
+                else:
+                    print("Failed to file claim. Please ensure policy is active.")
 
-    # ... (keep other existing methods)
+            except ValueError as e:
+                print(f"Invalid input: {str(e)}")
+            except Exception as e:
+                print(f"Error filing claim: {str(e)}")
     def display_menu(self):
         print("\n=== Customer Policy Management System ===")
         print("1. View My Profile")
@@ -532,46 +553,71 @@ class CustomerCLI:
             
             # Handle policy type display
             policy_type = policy['policy_type']
-            if isinstance(policy_type, (int, str)) and policy_type.isdigit():
-                # If it's a number, convert to policy name
-                try:
-                    policy_type = PolicyType(int(policy_type)).name
-                except ValueError:
-                    pass
             print(f"Type: {policy_type}")
             
-            print(f"Status: {policy['status']}")
+            # Convert status using the PolicyStatus class method
+            status = policy['status']
+            try:
+                if isinstance(status, str) and status.isdigit():
+                    # Use the get_status_name method to convert number to status name
+                    status = PolicyStatus.get_status_name(int(status))
+                elif isinstance(status, int):
+                    status = PolicyStatus.get_status_name(status)
+            except ValueError as e:
+                # Keep original status if conversion fails
+                pass
+                
+            print(f"Status: {status}")
+            
+            
             print(f"Coverage: ${float(policy['coverage_amount']):,.2f}")
             print(f"Premium: ${float(policy['premium']):,.2f}")
             
-            # Display policy-specific details
-            if policy_type == 'CAR':
-                print(f"Vehicle Model: {policy.get('vehicle_model', 'N/A')}")
-                print(f"Vehicle Condition: {policy.get('vehicle_condition', 'N/A')}")
-            elif policy_type == 'LIFE':
+            if policy_type == 'LIFE':
                 print(f"Beneficiary: {policy.get('beneficiary', 'N/A')}")
-            elif policy_type == 'HEALTH':
-                print(f"Includes Dental: {'Yes' if policy.get('includes_dental') else 'No'}")
-                if 'deductible' in policy:
-                    print(f"Deductible: ${float(policy['deductible']):,.2f}")
-            elif policy_type == 'PROPERTY':
-                print(f"Property Address: {policy.get('property_address', 'N/A')}")
-                print(f"Property Type: {policy.get('property_type', 'N/A')}")
+                print(f"Coverage: ${float(policy['coverage_amount']):,.2f}")
+                print(f"Premium: ${float(policy['premium']):,.2f}")
                 
+                # Display policy-specific details
+                if policy_type == 'CAR':
+                    print(f"Vehicle Model: {policy.get('vehicle_model', 'N/A')}")
+                    print(f"Vehicle Condition: {policy.get('vehicle_condition', 'N/A')}")
+                elif policy_type == 'LIFE':
+                    print(f"Beneficiary: {policy.get('beneficiary', 'N/A')}")
+                elif policy_type == 'HEALTH':
+                    print(f"Includes Dental: {'Yes' if policy.get('includes_dental') else 'No'}")
+                    if 'deductible' in policy:
+                        print(f"Deductible: ${float(policy['deductible']):,.2f}")
+                elif policy_type == 'PROPERTY':
+                    print(f"Property Address: {policy.get('property_address', 'N/A')}")
+                    print(f"Property Type: {policy.get('property_type', 'N/A')}")
+                
+    
     def view_claims(self):
-        claims = self.customer.get_claims()
-        if not claims:
+        """Display all claims for the customer"""
+        # Load claims from the claims storage service
+        all_claims = ClaimsStorageService.load_all_claims()
+        
+        # Filter claims for this customer
+        customer_claims = {
+            claim_id: claim_data 
+            for claim_id, claim_data in all_claims.items()
+            if claim_data['customer_id'] == self.customer.email
+        }
+        
+        if not customer_claims:
             print("\nNo claims found.")
             return
 
         print("\n=== My Claims ===")
-        for claim in claims:
-            print(f"\nClaim ID: {claim['claim_id']}")
-            print(f"Policy ID: {claim['policy_id']}")
-            print(f"Amount: ${claim['amount']:,.2f}")
-            print(f"Status: {claim['status']}")
-            print(f"Description: {claim['description']}")
-
+        for claim_id, claim_data in customer_claims.items():
+            print(f"\nClaim ID: {claim_id}")
+            print(f"Policy ID: {claim_data['policy_id']}")
+            print(f"Amount: ${float(claim_data['amount']):,.2f}")
+            print(f"Status: {claim_data['status']}")
+            print(f"Description: {claim_data['description']}")
+            print(f"Date Filed: {claim_data['date_filed']}")
+            print("-" * 50)
     def update_contact_info(self):
         print("\n=== Update Contact Information ===")
         contact_number = input("Enter new contact number (or press Enter to skip): ").strip()
@@ -589,20 +635,20 @@ class CustomerCLI:
             print("Data saved successfully!")
         else:
             print("Failed to save data.")
-
     def load_data(self):
-        customer_data = DataStorageService.load_customer_data(self.customer.email)
-        if customer_data:
-            loaded_customer = Customer.from_dict(customer_data)
-            if loaded_customer:
-                self.customer = loaded_customer
-                self._update_counters()  # Make sure counters are updated based on loaded data
+        customer_email = self.current_user
+        loaded_customer_data = DataStorageService.load_customer_data(customer_email)
+        if loaded_customer_data:
+            # Create a new Customer instance from the loaded data
+            customer = Customer.from_dict(loaded_customer_data)
+            if customer:
+                self.customer = customer
                 print("Data loaded successfully!")
+                print(f"Total Premium: ${customer.calculate_total_premium():,.2f}")
             else:
-                print("Failed to parse customer data.")
+                print("Failed to create customer from loaded data.")
         else:
-            print("Failed to load data.")
-
+            print("Failed to load customer data.")
 # Example Usage
 if __name__ == "__main__":
     # Create a customer

@@ -63,19 +63,12 @@ class UserManager:
         self.auth_manager = auth_manager
         self.users: Dict[str, User] = {}  # email -> User
 
-    def create_user(self, email: str, password: str) -> Tuple[bool, str]:
+    def create_user(self, email: str, password: str, role: str = None) -> Tuple[bool, str]:
         """Create or retrieve a user profile"""
         try:
-            # Check if user exists in auth system
-            if email not in self.auth_manager._users:
-                # If not in auth system, try to register
-                success, message = self.auth_manager.register(email, password, role='customer')
-                if not success:
-                    return False, message
-
             # Create user profile if it doesn't exist
             if email not in self.users:
-                user = User(email)
+                user = User(email, password=password, access_level=role)
                 self.users[email] = user
                 return True, "User profile created successfully"
 
@@ -84,6 +77,7 @@ class UserManager:
         except Exception as e:
             return False, f"Error creating user profile: {str(e)}"
 
+        
     def get_user(self, email: str) -> Optional[User]:
         return self.users.get(email)
 

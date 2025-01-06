@@ -1,9 +1,39 @@
 {
+    "customer@gmail.com": {
+        "email": "customer@gmail.com",
+        "password": "customer",
+        "role": 1,
+        "name": "customer"
+    },
+    "agent@gmail.com": {
+        "email": "agent@gmail.com",
+        "password": "agent",
+        "role": 4,
+        "name": "agent"
+    },
+    "underwriter@gmail.com": {
+        "email": "underwriter@gmail.com",
+        "password": "underwriter",
+        "role": 5,
+        "name": "underwriter"
+    },
+    "claim@gmail.com": {
+        "email": "claim@gmail.com",
+        "password": "claim",
+        "role": 3,
+        "name": "claim"
+    },
     "sabrina@gmail.com": {
         "email": "sabrina@gmail.com",
         "password": "sabrina",
-        "role": 5,
+        "role": 1,
         "name": "sabrina"
+    },
+    "kanye@gmail.com": {
+        "email": "kanye@gmail.com",
+        "password": "kanye",
+        "role": 1,
+        "name": "kanye"
     },
     "admin@gmail.com": {
         "email": "admin@gmail.com",
@@ -11,10 +41,10 @@
         "role": 2,
         "name": "admin"
     },
-    "arianagrande@gmail.com": {
-        "email": "ariangrande@gmail.com",
-        "password": "arianagrande",
-        "role": 4,
-        "name": "Ariana Grande"
+    "asaprocky@gmail.com": {
+        "email": "asaprocky@gmail.com",
+        "password": "asap",
+        "role": 1,
+        "name": "asaprocky"
     }
 }

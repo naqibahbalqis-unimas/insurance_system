@@ -1,0 +1,13 @@
+{
+    "report_type": "sales_performance",
+    "agent_id": "agent@gmail.com",
+    "generated_at": "2025-01-06T12:16:44.771240",
+    "data": {
+        "target_achievement": 0.0,
+        "total_sales": 193316567.0,
+        "monthly_sales": {
+            "2025-01": 193316567.0
+        },
+        "policy_sales": {}
+    }
+}

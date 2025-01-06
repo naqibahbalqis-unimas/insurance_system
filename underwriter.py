@@ -57,19 +57,75 @@ class UnderwriterCLI:
             else:
                 print("Invalid choice. Please try again.")
 
-    def view_profile(self):
-        if self.current_user:
-            user = self.auth_manager._users.get(self.current_user)
-            if user:
-                print("\n=== Profile Information ===")
-                print(f"Name: {user.name}")
-                print(f"Email: {user.email}")
-                print(f"Role: {user.role}")
-            else:
-                print("User information not found.")
-        else:
-            print("No user currently logged in.")
+    def view_(self, customer_email: str):
+        """Display all policies for a specific customer"""
+        try:
+            # Load the policies data
+            with open('data/customer_data.json', 'r') as f:
+                customers_data = json.load(f)
+            
+            # Check if customer exists
+            if customer_email not in customers_data:
+                print(f"\nNo customer found with email: {customer_email}")
+                return
 
+            # Get customer data
+            customer_data = customers_data[customer_email]
+            customer_info = customer_data.get('customer_info', {})
+            policies = customer_data.get('policies', {})
+
+            # Display customer information
+            print("\n=== Customer Information ===")
+            print(f"Name: {customer_info.get('name', 'N/A')}")
+            print(f"Email: {customer_info.get('email', 'N/A')}")
+            print(f"Contact: {customer_info.get('contact_number', 'N/A')}")
+            print(f"Address: {customer_info.get('address', 'N/A')}")
+            print(f"Birth Date: {customer_info.get('birth_date', 'N/A')}")
+            print(f"Credit Score: {customer_info.get('credit_score', 'N/A')}")
+
+            if not policies:
+                print("\nNo policies found for this customer.")
+                return
+
+            print("\n=== Customer Policies ===")
+            for policy_id, policy in policies.items():
+                print(f"\nPolicy ID: {policy_id}")
+                print(f"Type: {policy.get('policy_type', 'N/A')}")
+                print(f"Coverage Amount: ${float(policy.get('coverage_amount', 0)):,.2f}")
+                print(f"Premium: ${float(policy.get('premium', 0)):,.2f}")
+                print(f"Status: {policy.get('status', 'N/A')}")
+                print(f"Start Date: {policy.get('start_date', 'N/A')}")
+                print(f"End Date: {policy.get('end_date', 'N/A')}")
+
+                # Display policy-specific details based on type
+                if policy['policy_type'] == 'LIFE':
+                    print(f"Beneficiary: {policy.get('beneficiary', 'N/A')}")
+                    print(f"Death Benefit: ${float(policy.get('death_benefit', 0)):,.2f}")
+                
+                elif policy['policy_type'] == 'CAR':
+                    print(f"Vehicle ID: {policy.get('vehicle_id', 'N/A')}")
+                    print(f"Vehicle Model: {policy.get('vehicle_model', 'N/A')}")
+                    print(f"Plate Number: {policy.get('vehicle_plate_number', 'N/A')}")
+                    print(f"Vehicle Age: {policy.get('vehicle_age', 'N/A')} years")
+                    print(f"Comprehensive Coverage: {'Yes' if policy.get('is_comprehensive') else 'No'}")
+                    print(f"Vehicle Condition: {policy.get('vehicle_condition', 'N/A')}")
+                
+                elif policy['policy_type'] == 'HEALTH':
+                    print(f"Deductible: ${float(policy.get('deductible', 0)):,.2f}")
+                    print(f"Includes Dental: {'Yes' if policy.get('includes_dental') else 'No'}")
+                
+                elif policy['policy_type'] == 'PROPERTY':
+                    print(f"Property Address: {policy.get('property_address', 'N/A')}")
+                    print(f"Property Type: {policy.get('property_type', 'N/A')}")
+                
+                print("-" * 50)
+
+        except FileNotFoundError:
+            print("Customer data file not found.")
+        except json.JSONDecodeError:
+            print("Error reading customer data file.")
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
     def update_profile(self):
         if not self.current_user:
             print("Please log in first.")

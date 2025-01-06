@@ -1,0 +1,12 @@
+{
+    "CLM001": {
+        "claim_id": "CLM001",
+        "policy_id": "POL001",
+        "customer_id": "sabrina@gmail.com",
+        "amount": 13231.0,
+        "status": "APPROVE",
+        "description": "Death",
+        "evidence_documents": [],
+        "date_filed": "2025-01-06"
+    }
+}

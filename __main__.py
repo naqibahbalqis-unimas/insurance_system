@@ -7,6 +7,10 @@ from underwriter import UnderwriterCLI
 from agent import AgentCLI
 from customer import CustomerCLI, Customer
 from policy_json_handler import PolicyJSONHandler
+from agent import Agent  # Add this import at the top of the file
+from claim_adjuster import ClaimAdjuster  # Add this import at the top of the file
+
+
 
 
 class MainSystem:
@@ -22,6 +26,7 @@ class MainSystem:
         self.agent_cli = AgentCLI(self.auth_manager)
         self.current_user = None
         self.current_customer = None
+        self.customer_cli = None  # Initialize customer_cli
 
     def display_menu(self):
         print("\n=== Insurance Management System ===")
@@ -75,10 +80,9 @@ class MainSystem:
             ]
         else:  # CUSTOMER or unknown role
             menu_options = [
-                ["1", "User Profile"],
-                ["2", "Customer Portal"],
-                ["3", "Logout"],
-                ["4", "Exit"]
+                ["1", "Customer Portal"],
+                ["2", "Logout"],
+                ["3", "Exit"]
             ]
 
         print(tabulate(menu_options, headers=["Option", "Description"], tablefmt="grid"))
@@ -99,7 +103,34 @@ class MainSystem:
                 if self.auth_cli.login():
                     self.current_user = self.auth_cli.current_user
                     self.user_cli.current_user = self.auth_cli.current_user
-                    self.admin_cli.current_user = self.auth_cli.current_user
+                    
+                    # Get user role after successful login
+                    user_data = self.auth_cli.auth_manager._users[self.current_user]
+                    user_role = user_data.role
+                    
+                    # Convert role number to UserRole enum if needed
+                    if isinstance(user_role, int):
+                        user_role = UserRole(user_role)
+                    elif isinstance(user_role, str):
+                        role_map = {
+                            'admin': UserRole.ADMIN,
+                            'customer': UserRole.CUSTOMER,
+                            'claim adjuster': UserRole.CLAIM_ADJUSTER,
+                            'agent': UserRole.AGENT,
+                            'underwriter': UserRole.UNDERWRITER
+                        }
+                        user_role = role_map.get(user_role.lower(), UserRole.CUSTOMER)
+
+                    # Initialize admin if user is admin
+                    if user_role == UserRole.ADMIN:
+                        admin = Admin(
+                            user_id=self.current_user,
+                            name=user_data.name or self.current_user.split('@')[0],
+                            email=self.current_user,
+                            password=user_data.password
+                        )
+                        self.admin_cli.current_user = admin
+                    
                     return True
             elif choice == "2":
                 self.auth_cli.register()
@@ -138,39 +169,61 @@ class MainSystem:
 
             if user_role == UserRole.CUSTOMER:
                 if choice == "1":
-                    self.user_cli.run()
+                    if not self.customer_cli:
+                        # Try to load existing customer data first
+                        loaded_customer = PolicyJSONHandler.load_policies_from_json(self.current_user)
+                        if loaded_customer:
+                            self.current_customer = loaded_customer
+                            self.customer_cli = CustomerCLI(loaded_customer, self.current_user)
+                        else:
+                            # If no existing data, create new customer
+                            user_data = self.auth_cli.auth_manager._users[self.current_user]
+                            if not self.user_manager.get_user(self.current_user):
+                                success, message = self.user_manager.create_user(
+                                    self.current_user, 
+                                    user_data.password,
+                                    role="customer"
+                                )
+                                if not success:
+                                    print(f"Failed to create user profile: {message}")
+                                    continue
+                            
+                            user = self.user_manager.get_user(self.current_user)
+                            if user:
+                                customer = Customer(
+                                    email=self.current_user,
+                                    name=user_data.name or self.current_user.split('@')[0],
+                                    password=user_data.password
+                                )
+                                self.current_customer = customer
+                                self.customer_cli = CustomerCLI(customer, self.current_user)
+                            else:
+                                print("Customer profile not found!")
+                                continue
+                    self.customer_cli.run()
                 elif choice == "2":
-                    user_data = self.auth_cli.auth_manager._users[self.current_user]
-                    if not self.user_manager.get_user(self.current_user):
-                        success, _ = self.user_manager.create_user(self.current_user, user_data.password)
-                        if not success:
-                            print("Failed to create user profile!")
-                            continue
-                    
-                    user = self.user_manager.get_user(self.current_user)
-                    if user:
-                        customer = Customer(
-                            email=user_data.email,
-                            name=user_data.email.split('@')[0],
-                            password=user_data.password,
-                            contact_number=user.get_contact_number(),
-                            address=user.get_address(),
-                            credit_score=user.get_credit_score()
-                        )
-                        self.current_customer = customer
-                        customer_cli = CustomerCLI(customer)
-                        customer_cli.run()
-                    else:
-                        print("Customer profile not found!")
-                elif choice == "3":
                     self.logout()
-                elif choice == "4":
+                elif choice == "3":
                     print("Thank you for using the Policy Management System!")
                     break
                 else:
                     print("Invalid choice. Please try again.")
-            if user_role == UserRole.ADMIN:
+            elif user_role == UserRole.ADMIN:
                 if choice == "1":
+                    # Get user data from auth manager
+                    user_data = self.auth_cli.auth_manager._users[self.current_user]
+                    
+                    # Create Admin instance with all required parameters
+                    admin = Admin(
+                        user_id=self.current_user,
+                        name=user_data.name or self.current_user.split('@')[0],
+                        email=self.current_user,
+                        password=user_data.password
+                    )
+                    
+                    # Set the admin as current user
+                    self.admin_cli.current_user = admin
+                    
                     self.admin_cli.admin_menu()
                 elif choice == "2":
                     policy_id = input("Enter policy ID: ").strip()
@@ -191,6 +244,20 @@ class MainSystem:
                     print("Invalid choice. Please try again.")
             elif user_role == UserRole.CLAIM_ADJUSTER:
                 if choice == "1":
+                    # Get user data from auth manager
+                    user_data = self.auth_cli.auth_manager._users[self.current_user]
+                    
+                    # Create ClaimAdjuster instance with corrected parameters
+                    adjuster = ClaimAdjuster(
+                        email=self.current_user,
+                        name=user_data.name or self.current_user.split('@')[0],
+                        password=user_data.password
+                    )
+                    
+                    # Set the adjuster as current user
+                    self.claim_adjuster_cli.current_user = adjuster
+                    
+                    # Now run the claim adjuster CLI
                     self.claim_adjuster_cli.run()
                 elif choice == "2":
                     self.logout()
@@ -201,6 +268,13 @@ class MainSystem:
                     print("Invalid choice. Please try again.")
             elif user_role == UserRole.UNDERWRITER:
                 if choice == "1":
+                    # Get user data from auth manager
+                    user_data = self.auth_cli.auth_manager._users[self.current_user]
+                    
+                    # Set the current user for underwriter_cli
+                    self.underwriter_cli.current_user = self.current_user
+                    
+                    # Now run the underwriter CLI
                     self.underwriter_cli.run()
                 elif choice == "2":
                     self.logout()
@@ -211,6 +285,20 @@ class MainSystem:
                     print("Invalid choice. Please try again.")
             elif user_role == UserRole.AGENT:
                 if choice == "1":
+                    # Get user data from auth manager
+                    user_data = self.auth_cli.auth_manager._users[self.current_user]
+                    
+                    agent = Agent(
+                        user_id=self.current_user,
+                        name=user_data.name or self.current_user.split('@')[0],
+                        email=self.current_user,
+                        password=user_data.password
+                    )
+                    
+                    # Set the agent as current user
+                    self.agent_cli.current_user = agent
+                    
+                    # Now run the agent CLI
                     self.agent_cli.run()
                 elif choice == "2":
                     self.logout()
@@ -261,6 +349,7 @@ class MainSystem:
         self.underwriter_cli.current_user = None
         self.agent_cli.current_user = None
         self.current_customer = None
+        self.customer_cli = None  # Reset customer_cli
         print("Logged out successfully.")
 
 

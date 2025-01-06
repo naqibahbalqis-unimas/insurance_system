@@ -1,0 +1,56 @@
+{
+    "sabrina@gmail.com": {
+        "customer_info": {
+            "email": "sabrina@gmail.com",
+            "name": "sabrina",
+            "contact_number": "",
+            "address": "",
+            "birth_date": "2025-01-06",
+            "credit_score": 0.0
+        },
+        "policies": {
+            "POL001": {
+                "policy_id": "POL001",
+                "customer_id": "sabrina@gmail.com",
+                "policy_type": "LIFE",
+                "coverage_amount": 12364.0,
+                "premium": 1935.48,
+                "status": "1",
+                "start_date": "1999-01-01T00:00:00",
+                "end_date": "2023-02-20T00:00:00",
+                "conditions": [],
+                "beneficiary": "Barry Keaghan",
+                "death_benefit": 1231.0
+            }
+        }
+    },
+    "kanye@gmail.com": {
+        "customer_info": {
+            "email": "kanye@gmail.com",
+            "name": "kanye",
+            "contact_number": "",
+            "address": "",
+            "birth_date": "2025-01-06",
+            "credit_score": 0.0
+        },
+        "policies": {
+            "POL002": {
+                "policy_id": "POL002",
+                "customer_id": "kanye@gmail.com",
+                "policy_type": "CAR",
+                "coverage_amount": 124312.0,
+                "premium": 39779.84,
+                "status": "1",
+                "start_date": "2025-01-01T00:00:00",
+                "end_date": "2029-01-01T00:00:00",
+                "conditions": [],
+                "vehicle_id": "V002",
+                "is_comprehensive": true,
+                "vehicle_age": 6,
+                "vehicle_model": "Perodua Myvi",
+                "vehicle_plate_number": "MBS1123",
+                "vehicle_condition": "Good"
+            }
+        }
+    }
+}

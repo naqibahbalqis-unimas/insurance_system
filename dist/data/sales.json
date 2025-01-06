@@ -1,0 +1,11 @@
+{
+    "SALE_1": {
+        "sale_id": "SALE_1",
+        "policy_id": "POL_1",
+        "customer_id": "8",
+        "amount": 2123.0,
+        "commission_earned": 0.0,
+        "sale_date": "2025-01-06T10:45:04.929129",
+        "status": "PENDING"
+    }
+}

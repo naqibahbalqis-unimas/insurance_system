@@ -1,14 +1,44 @@
 {
-    "claim14@gmail.com": {
-        "email": "claim14@gmail.com",
-        "password": "claim",
-        "role": 3,
-        "name": "claim14"
+    "customer@gmail.com": {
+        "email": "customer@gmail.com",
+        "password": "customer",
+        "role": 1,
+        "name": "customer"
     },
-    "claim01@gmail.com": {
-        "email": "claim01@gmail.com",
+    "agent@gmail.com": {
+        "email": "agent@gmail.com",
+        "password": "agent",
+        "role": 4,
+        "name": "agent"
+    },
+    "underwriter@gmail.com": {
+        "email": "underwriter@gmail.com",
+        "password": "underwriter",
+        "role": 5,
+        "name": "underwriter"
+    },
+    "claim@gmail.com": {
+        "email": "claim@gmail.com",
         "password": "claim",
         "role": 3,
-        "name": "claim01"
+        "name": "claim"
+    },
+    "sabrina@gmail.com": {
+        "email": "sabrina@gmail.com",
+        "password": "sabrina",
+        "role": 1,
+        "name": "sabrina"
+    },
+    "kanye@gmail.com": {
+        "email": "kanye@gmail.com",
+        "password": "kanye",
+        "role": 1,
+        "name": "kanye"
+    },
+    "admin@gmail.com": {
+        "email": "admin@gmail.com",
+        "password": "admin",
+        "role": 2,
+        "name": "admin"
     }
 }

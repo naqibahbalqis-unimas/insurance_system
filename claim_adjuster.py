@@ -4,7 +4,9 @@ from users import User
 from auth import AuthenticationManager
 from claim import Claim, ClaimJSONHandler
 from policy import Policy
+import json
 from enum import Enum
+from claims_storage_service import ClaimsStorageService
 
 class RiskLevel(Enum):
     LOW = "LOW"
@@ -15,8 +17,8 @@ class ClaimAdjuster(User):
     """
     Concrete implementation of the User class for Claim Adjusters.
     """
-    def __init__(self, user_id: str, name: str, email: str, password: str):
-        super().__init__(user_id, name, email, password, access_level="Claim Adjuster")
+    def __init__(self,  name: str, email: str, password: str):
+        super().__init__( name, email, password, access_level="Claim Adjuster")
         self.specialization: str = ""
         self.cases_handled: int = 0
         self.certification: str = ""
@@ -26,7 +28,6 @@ class ClaimAdjuster(User):
     def get_user_details(self) -> Dict[str, Any]:
         """Get claim adjuster details"""
         return {
-            "user_id": self.user_id,
             "name": self.name,
             "email": self.email,
             "access_level": self.access_level,
@@ -169,7 +170,6 @@ class ClaimAdjuster(User):
             "risk_level": risk_level.value,
             "recommended_payout": payout,
             "validation_results": validation,
-            "adjuster_id": self.user_id,
             "assessment_date": datetime.now().isoformat(),
             "notes": {
                 "coverage_ratio": claim.get_amount() / policy.get_coverage_amount(),
@@ -232,45 +232,73 @@ class ClaimAdjusterCLI:
                 print("Invalid choice. Please try again.")
 
     def view_all_claims(self):
-        """Display all claims"""
-        if not self.claims:
-            print("\nNo claims found.")
+        """Display all pending claims that need review"""
+        pending_claims = ClaimsStorageService.get_pending_claims()
+        
+        if not pending_claims:
+            print("\nNo pending claims found.")
             return
 
-        print("\n=== All Claims ===")
-        for claim in self.claims.values():
-            print(f"\nClaim ID: {claim.get_claim_id()}")
-            print(f"Status: {claim.get_status()}")
-            print(f"Amount: ${claim.get_amount():,.2f}")
-            print(f"Description: {claim.get_description()}")
-
+        print("\n=== Pending Claims ===")
+        for claim_id, claim_data in pending_claims.items():
+            print(f"\nClaim ID: {claim_id}")
+            print(f"Policy ID: {claim_data['policy_id']}")
+            print(f"Customer ID: {claim_data['customer_id']}")
+            print(f"Amount: ${float(claim_data['amount']):,.2f}")
+            print(f"Description: {claim_data['description']}")
+            print(f"Date Filed: {claim_data['date_filed']}")
+            print("-" * 50)
+            
     def process_claim(self):
-        """Process a specific claim"""
-        claim_id = input("\nEnter Claim ID: ").strip()
-        claim = self.claims.get(claim_id)
-        
-        if not claim:
-            print("Claim not found.")
-            return
+            """Process a specific claim"""
+            claim_id = input("\nEnter Claim ID: ").strip()
+            
+            # Load claims from storage
+            all_claims = ClaimsStorageService.load_all_claims()
+            claim_data = all_claims.get(claim_id)
+            
+            if not claim_data:
+                print("Claim not found.")
+                return
 
-        policy = self.policies.get(claim.get_policy_id())
-        if not policy:
-            print("Associated policy not found.")
-            return
-
-        print(f"\nCurrent Status: {claim.get_status()}")
-        risk_level = self.current_user.assess_claim_risk(claim, policy)
-        print(f"Risk Level: {risk_level.value}")
-        
-        action = input("Action (APPROVE/REJECT/REVIEW): ").strip().upper()
-        if action in ["APPROVE", "REJECT", "REVIEW"]:
-            if self.current_user.update_claim_status(claim, action):
-                print(f"Claim status updated to {action}")
-                if action == "APPROVE":
-                    payout = self.current_user.calculate_claim_payout(claim, policy)
-                    print(f"Recommended Payout: ${payout:,.2f}")
+            print(f"\nClaim Amount: ${float(claim_data['amount']):,.2f}")
+            print(f"Description: {claim_data['description']}")
+            
+            print("\nSelect Action:")
+            print("1. Approve")
+            print("2. Reject")
+            print("3. Review")
+            
+            action = input("Enter choice (1-3): ").strip()
+            
+            # Convert numeric choice to action string
+            action_map = {
+                "1": "APPROVE",
+                "2": "REJECT",
+                "3": "REVIEW"
+            }
+            
+            if action in action_map:
+                # Update claim status
+                claim_data['status'] = action_map[action]
+                
+                # Save the updated claim
+                all_claims[claim_id] = claim_data  # Update in the dictionary
+                
+                # Save all claims back to storage
+                try:
+                    with open(ClaimsStorageService.CLAIMS_FILE, 'w') as f:
+                        json.dump(all_claims, f, indent=4, default=str)
+                    print(f"Claim status updated to {action_map[action]}")
+                    
+                    if action == "1":  # If approved
+                        coverage_amount = float(claim_data['amount'])
+                        print(f"Recommended Payout: ${coverage_amount:,.2f}")
+                except Exception as e:
+                    print(f"Error saving claim: {str(e)}")
+                    print("Failed to update claim status")
             else:
-                print("Failed to update claim status")
+                print("Invalid choice. Please enter 1, 2, or 3.")
 
     def generate_report(self):
         """Generate assessment report for a claim"""
@@ -355,6 +383,7 @@ class ClaimAdjusterCLI:
                 print("Failed to save changes.")
         except Exception as e:
             print(f"Error saving changes: {str(e)}")
+
 
     def logout(self):
         """Logout current user"""
